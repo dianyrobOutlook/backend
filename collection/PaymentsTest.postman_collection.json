@@ -1,0 +1,1106 @@
+{
+	"info": {
+		"_postman_id": "69013f84-6126-4f15-9585-e1e8746842bd",
+		"name": "PaymentsTest",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Payment Flow",
+			"item": [
+				{
+					"name": "1. Create Payment source id as CASH and accept partial authorization as TRUE",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var responseJSON = pm.response.json()",
+									"",
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Validate error message\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"Accept partial authorization not valid for autocomplete payments.\");",
+									"});",
+									"",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.unset(\"paymentID\")",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"source_id\": \"CASH\",\n    \"amount_money\": {\n      \"amount\": {{amount}},\n      \"currency\": \"{{currency}}\"\n    },\n    \"idempotency_key\": \"{{$guid}}\",\n    \"cash_details\": {\n      \"buyer_supplied_money\": {\n        \"amount\": 6000,\n        \"currency\": \"USD\"\n      }\n    },\n    \"accept_partial_authorization\": true\n  }'",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{baseURL}}/payments",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "1. Create Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var responseJSON = pm.response.json()",
+									"pm.environment.set(\"paymentID\",pm.response.json().payment.id)",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Amount is correct\", function () {",
+									"    pm.expect(responseJSON.payment.amount_money.amount).to.be.eql(+pm.environment.get(\"amount\"));",
+									"});",
+									"",
+									"pm.test(\"Currency is correct\", function () {",
+									"    pm.expect(responseJSON.payment.amount_money.currency).to.be.eql(pm.environment.get(\"currency\"));",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.unset(\"paymentID\")",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"source_id\": \"cnon:card-nonce-ok\",\n    \"amount_money\": {\n      \"amount\": {{amount}},\n      \"currency\": \"{{currency}}\"\n    },\n    \"idempotency_key\": \"{{$guid}}\",\n    \"cash_details\": {\n      \"buyer_supplied_money\": {\n        \"amount\": 6000,\n        \"currency\": \"USD\"\n      }\n    },\n    \"accept_partial_authorization\": true,\n    \"autocomplete\": false\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{baseURL}}/payments",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get By Payment ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var responseJSON = pm.response.json()",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Request payment ID matches url payment ID\", function () {",
+									"    pm.expect(responseJSON.payment.id).to.be.eql(pm.environment.get(\"paymentID\"));",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://{{baseURL}}/payments/{{paymentID}}",
+							"protocol": "http",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments",
+								"{{paymentID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get By Not Existent Payment ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Message for non existent payment\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"Could not find payment with id: lmoJDBLdh3SCASre6Sls3Ogr8yXYZ\");",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://{{baseURL}}/payments/lmoJDBLdh3SCASre6Sls3Ogr8yXYZ",
+							"protocol": "http",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments",
+								"lmoJDBLdh3SCASre6Sls3Ogr8yXYZ"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get All Payments",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://{{baseURL}}/payments",
+							"protocol": "http",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Update Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"idempotency_key\": \"{{$guid}}\",\n    \"payment\": {\n      \"tip_money\": {\n        \"amount\": 500,\n        \"currency\": \"USD\"\n      }\n    }\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://{{baseURL}}/payments/{{paymentID}}",
+							"protocol": "http",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments",
+								"{{paymentID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Update Non Existent Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Message for non existent payment\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"Could not find payment with id: lmoJDBLdh3SCASre6Sls3Ogr8yXYZ\");",
+									"});",
+									"",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"idempotency_key\": \"{{$guid}}\",\n    \"payment\": {\n      \"tip_money\": {\n        \"amount\": 500,\n        \"currency\": \"USD\"\n      }\n    }\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://{{baseURL}}/payments/lmoJDBLdh3SCASre6Sls3Ogr8yXYZ",
+							"protocol": "http",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments",
+								"lmoJDBLdh3SCASre6Sls3Ogr8yXYZ"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Payment Cancel",
+			"item": [
+				{
+					"name": "Create Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var responseJSON = pm.response.json()",
+									"pm.environment.set(\"paymentID\",pm.response.json().payment.id)",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Amount is correct\", function () {",
+									"    pm.expect(responseJSON.payment.amount_money.amount).to.be.eql(+pm.environment.get(\"amount\"));",
+									"});",
+									"",
+									"pm.test(\"Currency is correct\", function () {",
+									"    pm.expect(responseJSON.payment.amount_money.currency).to.be.eql(pm.environment.get(\"currency\"));",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.unset(\"paymentID\")",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"source_id\": \"cnon:card-nonce-ok\",\n    \"amount_money\": {\n      \"amount\": {{amount}},\n      \"currency\": \"{{currency}}\"\n    },\n    \"idempotency_key\": \"{{$guid}}\",\n    \"cash_details\": {\n      \"buyer_supplied_money\": {\n        \"amount\": 6000,\n        \"currency\": \"USD\"\n      }\n    },\n    \"accept_partial_authorization\": true,\n    \"autocomplete\": false\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{baseURL}}/payments",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Status is canceled\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"CANCELED\");",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://{{baseURL}}/payments/{{paymentID}}/cancel",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments",
+								"{{paymentID}}",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Non Existent Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Message for non existent payment\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"Could not find payment with id: zA1wJMXf7Mt54al1AO60iHbzcxAZY\");",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://{{baseURL}}/payments/zA1wJMXf7Mt54al1AO60iHbzcxAZY/cancel",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments",
+								"zA1wJMXf7Mt54al1AO60iHbzcxAZY",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Payment Complete",
+			"item": [
+				{
+					"name": "Create Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var responseJSON = pm.response.json()",
+									"pm.environment.set(\"paymentID\",pm.response.json().payment.id)",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Amount is correct\", function () {",
+									"    pm.expect(responseJSON.payment.amount_money.amount).to.be.eql(+pm.environment.get(\"amount\"));",
+									"});",
+									"",
+									"pm.test(\"Currency is correct\", function () {",
+									"    pm.expect(responseJSON.payment.amount_money.currency).to.be.eql(pm.environment.get(\"currency\"));",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.unset(\"paymentID\")",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"idempotency_key\": \"{{$guid}}\",\n    \"source_id\": \"CASH\",\n    \"accept_partial_authorization\": false,\n    \"autocomplete\": true,\n    \"buyer_email_address\": \"test@gmail.com\",\n    \"location_id\": \"LST2PK3GSEYYG\",\n    \"note\": \"My notes\",\n    \"amount_money\": {\n      \"amount\": {{amount}},\n      \"currency\": \"{{currency}}\"\n    },\n    \"cash_details\": {\n      \"buyer_supplied_money\": {\n        \"amount\": 6000,\n        \"currency\": \"USD\"\n      }\n    }\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{baseURL}}/payments",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Payment",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Status is canceled\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"COMPLETED\");",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://connect.squareupsandbox.com/v2/payments/{{paymentID}}/complete",
+							"protocol": "https",
+							"host": [
+								"connect",
+								"squareupsandbox",
+								"com"
+							],
+							"path": [
+								"v2",
+								"payments",
+								"{{paymentID}}",
+								"complete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Non Existent Payment",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Message for non existent payment\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"Could not find payment with id: zA1wJMXf7Mt54al1AO60iHbzcxAZY\");",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://connect.squareupsandbox.com/v2/payments/zA1wJMXf7Mt54al1AO60iHbzcxAZY/complete",
+							"protocol": "https",
+							"host": [
+								"connect",
+								"squareupsandbox",
+								"com"
+							],
+							"path": [
+								"v2",
+								"payments",
+								"zA1wJMXf7Mt54al1AO60iHbzcxAZY",
+								"complete"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Payment Refunds",
+			"item": [
+				{
+					"name": "1. Create Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var responseJSON = pm.response.json()",
+									"pm.environment.set(\"paymentID\",pm.response.json().payment.id)",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Amount is correct\", function () {",
+									"    pm.expect(responseJSON.payment.amount_money.amount).to.be.eql(+pm.environment.get(\"amount\"));",
+									"});",
+									"",
+									"pm.test(\"Currency is correct\", function () {",
+									"    pm.expect(responseJSON.payment.amount_money.currency).to.be.eql(pm.environment.get(\"currency\"));",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.unset(\"paymentID\")",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"idempotency_key\": \"{{$guid}}\",\n    \"source_id\": \"CASH\",\n    \"accept_partial_authorization\": false,\n    \"autocomplete\": true,\n    \"buyer_email_address\": \"test@gmail.com\",\n    \"location_id\": \"LST2PK3GSEYYG\",\n    \"note\": \"My notes\",\n    \"amount_money\": {\n      \"amount\": {{amount}},\n      \"currency\": \"{{currency}}\"\n    },\n    \"cash_details\": {\n      \"buyer_supplied_money\": {\n        \"amount\": 6000,\n        \"currency\": \"USD\"\n      }\n    }\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{baseURL}}/payments",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"payments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refunds Payment Higher Amount of Money",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var responseJSON = pm.response.json()",
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Message for Amount too high\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"The requested refund amount exceeds the amount available to refund\");",
+									"});",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "  {\n    \"idempotency_key\": \"{{$guid}}\",\n    \"payment_id\": \"{{paymentID}}\",\n    \"reason\": \"Test reason\",\n    \"amount_money\": {\n      \"amount\": 100000,\n      \"currency\": \"USD\"\n    }\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{baseURL}}/refunds",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"refunds"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refunds Payment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"",
+									"pm.environment.set(\"refundID\",pm.response.json().refund.id)",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"var responseJSON = pm.response.json()",
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);  ",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});",
+									"",
+									"const dateNow= new Date();",
+									"pm.environment.set('currentDate', dateNow.toISOString());",
+									"var refundDate = pm.response.json().refund.created_at;",
+									"var mydate=dateNow.toISOString()",
+									"var mydate1=mydate.substr(0,10)",
+									"pm.test(\"Date matches\", function () {",
+									"    pm.expect(refundDate).to.include(mydate1);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "\n  {\n    \"idempotency_key\": \"{{$guid}}\",\n    \"payment_id\": \"{{paymentID}}\",\n    \"reason\": \"Test reason\",\n    \"amount_money\": {\n      \"amount\": 1000,\n      \"currency\": \"USD\"\n    }\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{baseURL}}/refunds",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"refunds"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Refund",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://{{baseURL}}/refunds/{{refundID}}",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"refunds",
+								"{{refundID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Non Existent Payment Refund",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Message for non existent payment refund\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"Could not find refund with id: 15cFgBDrun44mfyJ2rM9WfF8jvFZY_t0PBKVPd4xHhDJme1RG9J5RiRqykf650UtMQTAxNYtW\");",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://{{baseURL}}/refunds/15cFgBDrun44mfyJ2rM9WfF8jvFZY_t0PBKVPd4xHhDJme1RG9J5RiRqykf650UtMQTAxNYtW",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"refunds",
+								"15cFgBDrun44mfyJ2rM9WfF8jvFZY_t0PBKVPd4xHhDJme1RG9J5RiRqykf650UtMQTAxNYtW"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Refunds",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);  ",
+									"});",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const schema = {",
+									"\"type\": \"object\"",
+									"};",
+									"pm.test(\"Validate schema\", () => {",
+									"            pm.response.to.have.jsonSchema(schema);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://{{baseURL}}/refunds",
+							"protocol": "https",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"refunds"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "token",
+			"value": "EAAAEFF3T035E6knbFeZ-EJ-oVY5ZPTSvhbmbz7VlFxpa_XQP7Tlre1TaMFp8IzL"
+		},
+		{
+			"key": "paymentID",
+			"value": "",
+			"disabled": true
+		},
+		{
+			"key": "baseURL\n",
+			"value": "",
+			"disabled": true
+		},
+		{
+			"key": "refundID\n",
+			"value": "",
+			"disabled": true
+		}
+	]
+}
